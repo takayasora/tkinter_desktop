@@ -1,0 +1,156 @@
+下記にStart画面、画面A、エクセル画面の参考となるプログラムがある。
+下記のプログラムを参考に、Start画面でButtonAが押されたら、画面Aとエクセル画面を表示するプログラムを作成しなさい。
+また、エクセル画面は画面上の5/7を占めるように配置し、画面Aは画面下の2/7を占めるように配置する。
+
+
+[Start画面、画面A]
+import tkinter as tk
+
+class WindowA:
+    def __init__(self, master, start_page):
+        self.master = master
+        self.start_page = start_page
+        self.master.title("画面A")
+
+        # 画面サイズを取得
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        # 画面の縦幅と横幅を計算
+        width = screen_width
+        height = int(screen_height * 2 / 7)
+
+        # 画面の下に配置
+        x = 0
+        y = screen_height - height
+        self.master.geometry(f"{width}x{height}+{x}+{y}")
+
+        # 問題ボタンを配置
+        button_texts = ["問題1", "問題2", "問題3", "問題4", "問題5"]
+        self.buttons = []
+        for i, btn_text in enumerate(button_texts, start=1):
+            button = tk.Button(self.master, text=btn_text, command=lambda btn=btn_text: self.show_question(btn))
+            button.grid(row=0, column=i-1, padx=10, pady=10, sticky="nsew")
+            self.buttons.append(button)
+
+        # グリッドの設定
+        for i in range(5):
+            self.master.columnconfigure(i, weight=1)
+
+        # ラベルを配置
+        self.label_var = tk.StringVar()
+        self.label_var.set("画面Aです")
+        label = tk.Label(self.master, textvariable=self.label_var)
+        label.grid(row=1, column=0, columnspan=5, pady=10)
+
+        # 戻るボタンを右下に配置
+        back_button = tk.Button(self.master, text="戻る", command=self.show_start_page)
+        back_button.grid(row=2, column=4, padx=10, pady=50, sticky="se")
+
+    def show_start_page(self):
+        # 戻るボタンが押されたときの処理
+        self.master.destroy()  # 画面Aを閉じる
+        self.start_page.show_first_frame()  # Start画面に戻る
+
+    def show_question(self, question):
+        # 問題ボタンが押されたときの処理
+        self.label_var.set(f"問題{question}が選択されました。")
+        for btn in self.buttons:
+            if btn.cget("text") == question:
+                btn.config(state=tk.DISABLED, bg="gray")
+
+class StartPage:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Start画面")
+
+        # 画面サイズを取得
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        # 画面の縦幅と横幅を取得
+        width = int(screen_width * 0.5)
+        height = int(screen_height * 0.5)
+
+        # 画面の中央に配置
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        self.master.geometry(f"{width}x{height}+{x}+{y}")
+
+        # ボタンを縦に7つ等間隔で配置
+        button_texts = ["A", "B", "C", "D", "E", "F", "G"]
+        for btn_text in button_texts:
+            button = tk.Button(self.master, text=f"ボタン{btn_text}", command=lambda btn=btn_text: self.show_window(btn))
+            button.pack(pady=10)
+
+    def show_window(self, btn_text):
+        # ボタンが押されたときの処理
+        if btn_text == "A":
+            self.master.withdraw()  # Start画面を非表示にする
+            window_a = tk.Toplevel(self.master)
+            WindowA(window_a, self)
+
+    def show_first_frame(self):
+        # Start画面を表示
+        self.master.deiconify()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = StartPage(root)
+    root.mainloop()
+
+
+
+[エクセル画面]
+import win32com.client as win32
+import os
+
+def open_excel(file_path):
+    # ファイルの存在を確認
+    if not os.path.exists(file_path):
+        print(f"Error: File '{file_path}' not found.")
+        return None
+
+    try:
+        # Excelアプリケーションを起動
+        excel_app = win32.Dispatch("Excel.Application")
+
+        # Excelファイルを開く
+        workbook = excel_app.Workbooks.Open(file_path)
+
+        # Excelウィンドウの大きさを画面いっぱいに変更
+        excel_app.ActiveWindow.WindowState = 3  # xlMaximized
+        excel_app.ActiveWindow.Width = excel_app.Application.Width
+        excel_app.ActiveWindow.Height = excel_app.Application.Height - 30  # タイトルバーなどの高さを考慮
+
+        # Excelウィンドウを画面の左上に移動
+        excel_app.Left = 0
+        excel_app.Top = 0
+
+        # Excelウィンドウを表示
+        excel_app.Visible = True
+
+        return excel_app, workbook
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+def close_excel(excel_app, workbook):
+    if workbook is not None:
+        try:
+            workbook.Close()
+        except:
+            pass
+    if excel_app is not None:
+        try:
+            excel_app.Quit()
+        except:
+            pass
+
+# Excelファイルのパスを指定
+excel_file_path = r"C:\Users\so12r\Documents\github\tkinter_desktop\Test.xlsx"
+
+# Excelを起動してファイルを表示
+excel_app, workbook = open_excel(excel_file_path)
+# close_excel(excel_app, workbook)  # close_excelの呼び出しは必要に応じて行ってください
